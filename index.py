@@ -2,10 +2,9 @@
 
 from tweety import Twitter
 from tweety.filters import SearchFilters
-from datetime import datetime, timedelta
+import datetime
 import time
 import requests
-import datetime
 import sys
 
 # PROXY_SERVER = 'http://127.0.0.1:7890'
@@ -41,13 +40,13 @@ def login():
   app.sign_in('account', 'password')
 
 def genDate(start_date_str, end_date_str):
-  start_date = datetime.strptime(start_date_str, '%Y-%m-%d')
-  end_date = datetime.strptime(end_date_str, '%Y-%m-%d')
+  start_date = datetime.datetime.strptime(start_date_str, '%Y-%m-%d')
+  end_date = datetime.datetime.strptime(end_date_str, '%Y-%m-%d')
 
   date_range = []
   current_date = start_date
   while current_date < end_date:
-    next_date = current_date + timedelta(days=1)
+    next_date = current_date + datetime.timedelta(days=1)
     date_range.append({'start_date': current_date.strftime('%Y-%m-%d'), 'end_date': next_date.strftime('%Y-%m-%d')})
     current_date = next_date
 
@@ -102,28 +101,35 @@ def scroll_page(keyword, next_cursor):
   scroll_page(keyword, tweets.cursor)
 
 
-def startDateRange(start_date, end_date):
+def startDateRange(start_date, end_date, initialCursor):
   dates = genDate(start_date, end_date)
 
   for date_range in dates:
-    # 如果程序中断可以在这里设置最后的 cursor，接着上一页继续爬取
     cursor = None
+    if date_range['start_date'] == start_date:
+      cursor = initialCursor
     keyword = "(chat.openai.com/g/) until:" + date_range['end_date'] + " since:" + date_range['start_date']
     scroll_page(keyword, cursor)
     print('all success.....:', keyword)
 
-def startLatest():
-  # 如果程序中断可以在这里设置最后的 cursor，接着上一页继续爬取
-  cursor = None
+def startLatest(cursor):
   keyword = "chat.openai.com/g/"
   scroll_page(keyword, cursor)
   print('all success............')
 
 def startCrawler():
   if len(sys.argv) > 1:
-    startDateRange(sys.argv[1], sys.argv[2])
+    if len(sys.argv[1]) > 10:
+      cur = sys.argv[1]
+      startLatest(cur)
+    else:
+      if len(sys.argv) >= 4:
+        cur = sys.argv[3]
+      else:
+        cur = None
+      startDateRange(sys.argv[1], sys.argv[2], cur)
   else:
-    startLatest()
+    startLatest(None)
 
 login()
 startCrawler()
